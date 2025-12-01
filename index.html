@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Our Daily Bread Presbyterian Church</title>
+<style>
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body { font-family: Arial, sans-serif; background:#f9f9f9; color:#333; }
+
+  header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  /* use local image instead of Facebook link */
+  background: url('Images/church-bg.jpg') no-repeat center/cover;
+  text-align: center;
+  color: #fff;
+  padding: 20px;
+}
+
+  header::before {
+    content: "";
+    position: absolute;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1;
+  }
+
+  header > * { position: relative; z-index:2; }
+
+  header img {
+    width:120px; height:120px;
+    border-radius:50%;
+    border:3px solid #fff;
+    margin-bottom: 20px;
+  }
+
+  header h1 { font-size:3rem; margin-bottom: 15px; }
+  header p.verse { font-size:1.2rem; font-style:italic; margin-bottom:30px; }
+  header button {
+    padding:14px 28px; font-size:1.2rem; background:#fff; color:#000;
+    border:none; border-radius:8px; cursor:pointer; font-weight:600;
+    transition: all 0.3s ease;
+  }
+  header button:hover { background:#000; color:#fff; transform: scale(1.05); }
+
+  /* Sections */
+  section {
+    max-width:1000px;
+    margin:40px auto;
+    padding:30px 20px;
+    background:#fff;
+    border-radius:10px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.05);
+  }
+
+  section h2 {
+    font-size:2rem; margin-bottom:20px;
+    border-bottom:2px solid #000;
+    display:inline-block; padding-bottom:5px;
+  }
+
+  section p { font-size:1rem; color:#444; line-height:1.6; }
+
+.photo-album {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.album-item {
+    width: 100%;
+    height: 250px;
+    background: white;
+    border: 5px solid #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.album-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+}
+
+
+  @media(max-width:768px){
+    header h1 { font-size:2rem; }
+    header p.verse { font-size:1rem; }
+    header button { font-size:1rem; padding:12px 24px; }
+  }
+  .album-item {
+    width: 100%;
+    height: 250px;
+    background: white;
+    border: 5px solid #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.album-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    transition: transform 0.5s ease, filter 0.5s ease;
+}
+
+/* dark overlay effect */
+.album-item::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0);   /* transparent initially */
+    transition: background 0.5s ease;
+    z-index: 1;
+}
+
+/* hover effect */
+.album-item:hover img {
+    transform: scale(1.2);        /* zoom in */
+    z-index: 2;                   /* bring image above overlay */
+}
+
+.album-item:hover::after {
+    background: rgba(0,0,0,0.3);  /* darken overlay */
+}
+
+</style>
+</head>
+<body>
+
+<header>
+  <!-- Updated logo image -->
+  <img src="https://scontent.fmnl13-4.fna.fbcdn.net/v/t39.30808-1/414433978_694366739491679_3129605832460450671_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=108&ccb=1-7&_nc_sid=2d3e12&_nc_eui2=AeG_46Ep_ftMLeKYPuyumAmaS7vGzMoHtAJLu8bMyge0Ain2g130GgvPJV_Rwgmq_wa_Z-8573Nw1gDp2lWvSsCX&_nc_ohc=S_PCuSfSTBIQ7kNvwFn62tI&_nc_oc=AdmvXD6Xtds3HY-PJ8MQ1QhEBLzV63N3OGeCoA1tSTTCaNDxS9NwKozaqFBorohi95Z2Gylu9HhWlvJK-K6h8loe&_nc_zt=24&_nc_ht=scontent.fmnl13-4.fna&_nc_gid=w0Cwmnb5L3WiMN6v9ar9hQ&oh=00_Afgv8Wazia-PBx0QhUZfELzki5TNDtbi_9cbjQPbBn8hCA&oe=6933A9FE" 
+       alt="Church Logo">
+  <h1>Our Daily Bread Presbyterian Church</h1>
+  <p class="verse">Acts 16:31<br>They replied, “Believe in the Lord Jesus, and you will be saved - you and your household.”</p>
+  <button onclick="location.href='photobooth.html'">Photobooth</button>
+</header>
+
+<section>
+  <h2>About the Church</h2>
+  <p>
+    Our Daily Bread Presbyterian Church was founded to serve the spiritual needs of the community, fostering a place of worship, fellowship, and outreach. We are committed to teaching the Word of God and supporting every member's spiritual journey.
+  </p>
+</section>
+
+<section>
+  <h2>Ministry Schedule</h2>
+  <p>
+    Sunday Worship: 9:00 AM - 11:00 AM<br>
+    Bible Study & Prayer Meeting: Wednesday 6:30 PM<br>
+    Youth Fellowship: Friday 5:00 PM<br>
+    Children's Ministry: Saturday 10:00 AM
+  </p>
+</section>
+
+
+<section>
+  <h2>Photo Album</h2>
+
+  <div class="photo-album">
+
+    <div class="album-item">
+      <img src="Images/photo1.jpg" alt="Photo 1">
+    </div>
+
+    <div class="album-item">
+      <img src="Images/photo2.jpg" alt="Photo 2">
+    </div>
+
+    <div class="album-item">
+      <img src="Images/photo3.jpg" alt="Photo 3">
+    </div>
+
+    <div class="album-item">
+      <img src="Images/photo4.jpg" alt="Photo 4">
+    </div>
+
+    <div class="album-item">
+      <img src="Images/photo5.jpg" alt="Photo 5">
+    </div>
+
+    <div class="album-item">
+      <img src="Images/photo6.jpg" alt="Photo 6">
+    </div>
+
+  </div>
+</section>
+
+
+</body>
+</html>
