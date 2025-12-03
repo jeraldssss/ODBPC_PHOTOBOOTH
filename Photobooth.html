@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ODB Photobooth</title>
+<link rel="stylesheet" href="style.css">
+<style>
+/* Minimal inline styling for layout tiles and collage preview */
+.layout-tile { border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; display:inline-block; margin:4px; }
+.layout-tile.selected { border-color: #000; background:#f0f0f0; }
+.layout-preview { display:grid; gap:4px; }
+.layout-cell { background:#ccc; height:50px; border-radius:4px; }
+.collage-frame { overflow:hidden; border-radius:0px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <img 
+      src="https://scontent.fmnl13-4.fna.fbcdn.net/v/t39.30808-1/414433978_694366739491679_3129605832460450671_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=108&ccb=1-7&_nc_sid=2d3e12&_nc_eui2=AeG_46Ep_ftMLeKYPuyumAmaS7vGzMoHtAJLu8bMyge0Ain2g130GgvPJV_Rwgmq_wa_Z-8573Nw1gDp2lWvSsCX&_nc_ohc=S_PCuSfSTBIQ7kNvwFn62tI&_nc_oc=AdmvXD6Xtds3HY-PJ8MQ1QhEBLzV63N3OGeCoA1tSTTCaNDxS9NwKozaqFBorohi95Z2Gylu9HhWlvJK-K6h8loe&_nc_zt=24&_nc_ht=scontent.fmnl13-4.fna&_nc_gid=PFtFeg-GI7JUtUuem5KoGQ&oh=00_AfgxQDO9RCCrE-UMUNeSOAPQqDkIU_peui1BbA5ItQ7fRA&oe=6933A9FE" 
+      alt="ODB Logo" 
+      style="height:80px; width:auto; display:block; margin:0 auto 10px;"
+    >
+    Our Daily Bread Presbyterian Church Photobooth
+  </div>
+  <div class="subtitle">
+    Acts 16:31<br>
+    They replied, “Believe in the Lord Jesus, and you will be saved - you and your household.
+  </div>
+</header>
+
+<!-- Home Button -->
+<button 
+  onclick="window.location.href='index.html'" 
+  style="
+    padding: 10px 20px; 
+    font-size: 1rem; 
+    background: #000; 
+    color: #fff; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer;
+    transition: all 0.3s ease;
+  "
+  onmouseover="this.style.background='#fff'; this.style.color='#000';"
+  onmouseout="this.style.background='#000'; this.style.color='#fff';"
+>
+  Home
+</button>
+
+<main>
+<section class="panel" aria-labelledby="chooseLayoutTitle">
+<h3 id="chooseLayoutTitle">Choose a layout</h3>
+<p class="small">Pick how many photos will appear in the final strip/collage. After choosing, press <strong>Start</strong> to enable the camera.</p>
+
+<div class="layouts" id="layouts"></div>
+
+<div style="margin-top:14px;display:flex;gap:8px;justify-content:space-between;align-items:center">
+<div class="small">Selected: <span id="selectedCount">—</span></div>
+<div>
+<button class="btn" id="btnStart">Start</button>
+</div>
+</div>
+
+<hr style="margin:16px 0;border:none;border-top:1px solid rgba(0,0,0,0.04)">
+
+<div style="display:flex;flex-direction:column;gap:8px">
+<label class="small">Timer setting</label>
+<select id="timerSelect" class="ghost" style="padding:8px 10px">
+<option value="3">3 seconds</option>
+<option value="5">5 seconds</option>
+<option value="10">10 seconds</option>
+<option value="15">15 seconds</option>
+</select>
+
+<div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+<button class="ghost" id="btnSequence">Start Sequence</button>
+<div class="small">(Will capture <span id="seqCount">0</span> photos consecutively)</div>
+</div>
+
+<div style="margin-top:8px;font-size:0.9rem;color:var(--muted)">Tips: Use <strong>Capture</strong> for single shots. Use <strong>Start Sequence</strong> to take N photos back-to-back using the selected timer.</div>
+</div>
+</section>
+
+<section class="capture">
+<div class="stage" id="stage">
+<div class="camera-container" id="cameraContainer">
+<video id="camera" autoplay playsinline muted class="mirror"></video>
+<div id="countdown" aria-live="polite"></div>
+<img id="previewThumb" alt="preview" style="display:none" />
+</div>
+
+<div class="controls">
+  <button class="btn" id="btnCapture">Capture</button>
+  <button class="ghost" id="btnFullscreen">Camera Fullscreen</button>
+  <button class="ghost" id="btnReset">Reset</button>
+  <!-- NEW BUTTONS -->
+  <button class="ghost" id="btnRetake">Retake</button>
+<button class="btn" id="btnDone">Done</button>
+<button class="ghost" id="btnFlip">Flip Camera</button>
+</div>
+
+
+<div class="collage" id="collagePreview" aria-live="polite" style="width:100%"></div>
+</div>
+</section>
+</main>
+
+<footer>Built for Our Daily Bread Presbyterian Church • Cute & Minimal</footer>
+
+<script>
+// Photobooth name
+const PHOTOSTRIP_NAME = "Our Daily Bread Presbyterian Church";
+const LAYOUT_OPTIONS = [2,3,4,6];
+
+let chosen = null;
+let captures = []; 
+let cameraStream = null;
+let countdownTimer = null;
+
+const layoutsEl = document.getElementById('layouts');
+const selectedCountEl = document.getElementById('selectedCount');
+const btnStart = document.getElementById('btnStart');
+const timerSelect = document.getElementById('timerSelect');
+const btnSequence = document.getElementById('btnSequence');
+const seqCountEl = document.getElementById('seqCount');
+
+const camera = document.getElementById('camera');
+const cameraContainer = document.getElementById('cameraContainer');
+const btnCapture = document.getElementById('btnCapture');
+const btnFullscreen = document.getElementById('btnFullscreen');
+const btnReset = document.getElementById('btnReset');
+const countdownEl = document.getElementById('countdown');
+const previewThumb = document.getElementById('previewThumb');
+const collagePreview = document.getElementById('collagePreview');
+const btnDownload = document.getElementById('btnDownload');
+const btnRetake = document.getElementById("btnRetake");
+const btnDone = document.getElementById("btnDone");
+const btnFlip = document.getElementById("btnFlip");
+
+let usingFront = true;
+
+
+function createLayoutTile(n){
+  const t = document.createElement('div');
+  t.className = 'layout-tile';
+  t.tabIndex = 0;
+  const title = document.createElement('div'); 
+  title.textContent = `${n}-Picture`; 
+  title.style.fontWeight='700'; 
+  title.style.marginBottom='8px';
+  const preview = document.createElement('div'); 
+  preview.className='layout-preview';
+  preview.style.height = "180px"; 
+  if (n === 4) preview.style.gridTemplateColumns = '1fr 1fr';
+  else if (n === 6) preview.style.gridTemplateColumns = '1fr 1fr 1fr';
+  else preview.style.gridTemplateColumns = '1fr';
+  preview.innerHTML = Array(n).fill('<div class="layout-cell"></div>').join('');
+  t.appendChild(title); 
+  t.appendChild(preview);
+  t.addEventListener('click', ()=> selectLayout(n,t));
+  t.addEventListener('keydown',(e)=>{ if(e.key==='Enter') selectLayout(n,t); });
+  return t;
+}
+LAYOUT_OPTIONS.forEach(n=> layoutsEl.appendChild(createLayoutTile(n)));
+
+function selectLayout(n, el){
+  document.querySelectorAll('.layout-tile').forEach(x=>x.classList.remove('selected'));
+  el.classList.add('selected'); 
+  chosen = n; 
+  captures = []; 
+  selectedCountEl.textContent = `${n} photos`; 
+  seqCountEl.textContent = n; 
+  renderCollagePreview();
+}
+
+async function startCamera(){
+  if(cameraStream) return;
+  try { 
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' }, audio:false }); 
+    camera.srcObject = cameraStream; 
+  } catch(err){ 
+    alert('Unable to access camera. Please allow camera permission in your browser.'); 
+  }
+}
+async function stopCamera(){ 
+  if(!cameraStream) return; 
+  cameraStream.getTracks().forEach(t=>t.stop()); 
+  cameraStream=null; 
+  camera.srcObject=null; 
+}
+
+function startCountdown(seconds, onTick, onEnd){
+  clearInterval(countdownTimer);
+  let s = seconds;
+  countdownEl.textContent = s;
+  countdownTimer = setInterval(()=>{
+    s--;
+    if(s>0){ countdownEl.textContent = s; if(onTick) onTick(s); } 
+    else { clearInterval(countdownTimer); countdownEl.textContent=''; if(onEnd) onEnd(); }
+  },1000);
+}
+
+function captureOnce() {
+  if (!cameraStream) return null;
+
+  const v = camera;
+  const canvas = document.createElement('canvas');
+  canvas.width = v.videoWidth;
+  canvas.height = v.videoHeight;
+
+  const ctx = canvas.getContext('2d');
+
+  // Flip the capture if using front camera / mirrored
+  ctx.save();
+  if (isMirrored) {
+    ctx.translate(canvas.width, 0);  // move origin to top-right
+    ctx.scale(-1, 1);                // flip horizontally
+  }
+
+  ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+  ctx.restore();
+
+  return canvas.toDataURL('image/png');
+}
+
+
+async function startSequence(){
+  if(!chosen){ alert('Please choose a layout first.'); return; }
+  captures = []; 
+  renderCollagePreview();
+  const secs = parseInt(timerSelect.value,10) || 3;
+  for(let i=0;i<chosen;i++){
+    await new Promise(resolve=> startCountdown(secs,null,resolve));
+    const data = captureOnce();
+    if(data) captures.push(data);
+    renderCollagePreview();
+    await new Promise(r=>setTimeout(r,500));
+  }
+}
+
+btnStart.addEventListener('click', async ()=>{ 
+  if(!chosen){ alert('Select a layout first.'); return; } 
+  await startCamera(); 
+  btnCapture.focus(); 
+});
+btnCapture.addEventListener('click', ()=> {
+  if(!cameraStream){ alert('Camera not started. Press Start.'); return; }
+  const secs = parseInt(timerSelect.value,10) || 3;
+  startCountdown(secs,null,()=>{
+    const d = captureOnce();
+    if(d){ captures.push(d); renderCollagePreview(); }
+  });
+});
+btnSequence.addEventListener('click', async ()=>{ if(!cameraStream) await startCamera(); startSequence(); });
+
+window.addEventListener('keydown',(e)=>{ 
+  if(e.code==='Space' && document.activeElement.tagName!=='INPUT' && document.activeElement.tagName!=='TEXTAREA'){ 
+    e.preventDefault(); 
+    btnCapture.click(); 
+  } 
+});
+
+btnReset.addEventListener('click', ()=>{ captures=[]; renderCollagePreview(); });
+
+// FULLSCREEN
+btnFullscreen.addEventListener('click', async ()=>{
+  if(!document.fullscreenElement){
+    if(cameraContainer.requestFullscreen) await cameraContainer.requestFullscreen();
+    else if(camera.requestFullscreen) await camera.requestFullscreen();
+  } else { if(document.exitFullscreen) await document.exitFullscreen(); }
+});
+
+
+
+/*  
+====================================================
+   ⭐ RETAKE + DONE BUTTONS (WORKING)
+   — EVERYTHING BELOW IS NEWLY ADDED —
+====================================================
+*/
+
+// RETAKE (removes last captured photo)
+btnRetake.addEventListener("click", () => {
+  if (captures.length === 0) {
+    alert("No photo to retake.");
+    return;
+  }
+  captures.pop();
+  renderCollagePreview();
+});
+btnDone.addEventListener("click", () => {
+  if (captures.length === 0) return alert("Take a photo first.");
+  alert("Done! Photos finalized.");
+});
+
+
+
+// DONE BUTTON: Save photos and redirect to customize.html
+btnDone.addEventListener("click", () => {
+  if(captures.length === 0) return alert("Take a photo first.");
+  sessionStorage.setItem("photostripImages", JSON.stringify(captures));
+  window.location.href = "customize.html";
+});
+
+
+let isMirrored = true; // start mirrored
+
+btnFlip.addEventListener("click", () => {
+  isMirrored = !isMirrored;
+  camera.style.transform = isMirrored ? "scaleX(-1)" : "scaleX(1)";
+});
+
+
+
+  
+/* ============================= */
+
+// Build vertical photostrip for download
+async function buildCollageImage(){
+  if(!chosen || captures.length===0) return null;
+
+  const width = 600;
+  const padding = 20;
+  const gap = 10;
+  const photoHeight = 400;
+  const labelHeight = 100;
+  const height = captures.length*photoHeight + padding*2 + gap*(captures.length-1) + labelHeight;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#ffe6f2";
+  ctx.fillRect(0,0,width,height);
+
+  let y = padding;
+  for(let i=0;i<captures.length;i++){
+    const img = new Image();
+    img.crossOrigin="anonymous";
+    await new Promise(resolve=>{
+      img.onload = ()=>{
+        const ratio = Math.max(width / img.width, photoHeight / img.height);
+        const nw = img.width * ratio;
+        const nh = img.height * ratio;
+        const nx = (width - nw)/2;
+        ctx.drawImage(img, nx, y, nw, nh);
+
+        y += photoHeight + gap;
+        resolve();
+      };
+      img.src = captures[i];
+    });
+  }
+
+  ctx.fillStyle = "#000";
+  ctx.font = "bold 20px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(PHOTOSTRIP_NAME, width/2, height - 50);
+
+  return canvas.toDataURL("image/png");
+}
+
+btnDownload.addEventListener("click", async ()=>{
+  if(captures.length===0) return alert("No photos to download.");
+  const dataURL = await buildCollageImage();
+  const link = document.createElement("a");
+  link.href = dataURL;
+  link.download = "odb_photostrip.png";
+  link.click();
+});
+
+function renderCollagePreview() {
+  collagePreview.innerHTML = '';
+  if (!chosen) {
+    collagePreview.innerHTML = '<div style="color:var(--muted);text-align:center">No layout selected</div>';
+    btnDownload.style.display = 'none';
+    previewThumb.style.display = 'none';
+    return;
+  }
+
+  let rows = 1, cols = 1;
+  if (chosen === 2) { rows = 2; cols = 1; }
+  else if (chosen === 3) { rows = 3; cols = 1; }
+  else if (chosen === 4) { rows = 2; cols = 2; }
+  else if (chosen === 6) { rows = 3; cols = 2; }
+
+  const stripHeight = 600;
+  const gap = 4;
+  const frameHeight = (stripHeight - gap * (rows - 1)) / rows;
+
+  collagePreview.style.display = 'grid';
+  collagePreview.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  collagePreview.style.gridTemplateRows = `repeat(${rows}, ${frameHeight}px)`;
+  collagePreview.style.gap = gap + "px";
+
+  for (let i = 0; i < chosen; i++) {
+    const f = document.createElement('div');
+    f.className = 'collage-frame';
+    f.style.width = "100%";
+    f.style.height = frameHeight + "px";
+    f.style.overflow = "hidden";
+    f.style.borderRadius = "0px";
+
+    if (captures[i]) {
+      const img = document.createElement('img');
+      img.src = captures[i];
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'contain';
+      f.appendChild(img);
+    } else {
+      f.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.8rem">
+                        Photo ${i + 1}<br>Waiting...
+                     </div>`;
+    }
+
+    collagePreview.appendChild(f);
+  }
+
+  if (captures.length > 0) {
+    previewThumb.src = captures[captures.length - 1];
+    previewThumb.style.display = 'block';
+    btnDownload.style.display = 'inline-block';
+  } else {
+    previewThumb.style.display = 'none';
+    btnDownload.style.display = 'none';
+  }
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customize Your Photostrip</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin:0; padding:20px;
+  background:#fff0f5;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+header { text-align:center; margin-bottom:20px; }
+h1 { font-size:1.8rem; margin-bottom:5px; }
+
+.customize-container {
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  gap:40px;
+  width:100%;
+  max-width:900px;
+}
+
+/* Left Panel */
+.controls {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:20px;
+  min-width:140px;
+}
+.section-title { font-weight:bold; margin-bottom:8px; text-align:center; }
+
+/* Photostrip */
+.photostrip-container-wrapper {
+  display:flex;
+  flex-direction: column;
+  align-items:center;
+}
+#photostripContainer {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+.photostrip-frame {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  background-color: #ffffff;
+}
+.photostrip-frame img {
+  width: 100%;
+  object-fit: cover;
+  border: none;
+}
+
+.photostrip-label {
+  text-align: center;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-style: italic;
+  margin-top: 6px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 8px 0;             
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Stickers */
+.stickers {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  min-width:140px;
+}
+.sticker {
+  width:50px; height:50px;
+  cursor:pointer;
+  border:2px solid transparent;
+  border-radius:6px;
+}
+.sticker.selected { border-color:#000; }
+
+button {
+  padding:10px 20px; 
+  font-size:1rem; 
+  cursor:pointer;
+  border-radius:6px; 
+  border:none;
+  background:#000; 
+  color:#fff; 
+  transition:0.3s;
+}
+button:hover { background:#fff; color:#000; border:1px solid #000; }
+
+#previewCanvas { display:none; }
+
+/* Circle color options (frame + label colors) */
+.colorChoice,
+.color-choice {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;      
+  cursor: pointer;
+  border: 0.5px solid #000000;  
+  box-shadow: 0 0 4px rgba(0,0,0,0.3);
+  transition: transform .2s, border .2s;
+}
+
+.colorChoice:hover,
+.color-choice:hover {
+  transform: scale(1.15);
+}
+
+.colorChoice.selected,
+.color-choice.selected {
+  border: 3px solid #000;  
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Customize Your Photostrip</h1>
+  <p>Preview your photostrip before downloading.</p>
+</header>
+
+<div class="customize-container">
+
+  <!-- Left Side Controls -->
+  <div class="controls">
+
+    <!-- Frame Colors -->
+    <div class="section-title">Frame Color</div>
+    <div id="frameColors">
+      <div id="frameColorOptions" 
+           style="display:grid; grid-template-columns:repeat(10, 25px); gap:8px; margin-bottom:20px;">
+      </div>
+    </div>
+
+   <!-- Label Colors -->
+   <div class="section-title" style="margin-top:20px;">Label Color</div>
+   <div id="labelColors">
+     <div class="color-choice selected" style="background:#000000;" data-label="#000000"></div>
+     <div class="color-choice" style="background:#ffffff;" data-label="#ffffff"></div>
+   </div>
+
+    <button id="btnDownload">Download Photostrip</button>
+  </div>
+
+  <!-- Photostrip Preview -->
+  <div class="photostrip-container-wrapper">
+    <div id="photostripContainer"></div>
+  </div>
+
+  <!-- Stickers -->
+  <div class="stickers">
+    <div class="section-title">Stickers</div>
+    <p style="text-align:center;color:#666;font-size:0.9rem;">Add stickers here later</p>
+  </div>
+
+</div>
+
+<canvas id="previewCanvas" width="300" height="800"></canvas>
+
+<script>
+const CHURCH_NAME = "Our Daily Bread Presbyterian Church";
+
+let captures = JSON.parse(sessionStorage.getItem("photostripImages") || "[]");
+let selectedFrameColor = "#ffffff"; 
+let selectedLabelColor = "#000000"; 
+let selectedFramePattern = null; // fixed declaration
+
+const photostripContainer = document.getElementById("photostripContainer");
+const btnDownload = document.getElementById("btnDownload");
+
+/* ----------------- RENDER PHOTOSTRIP ----------------- */
+function renderPhotostrip() {
+  photostripContainer.innerHTML = "";
+  const stripFrame = document.createElement("div");
+  stripFrame.className = "photostrip-frame";
+
+  if(selectedFramePattern){
+    stripFrame.style.backgroundImage = `url(${selectedFramePattern})`;
+    stripFrame.style.backgroundSize = "cover";
+    stripFrame.style.backgroundRepeat = "no-repeat";
+  } else {
+    stripFrame.style.backgroundColor = selectedFrameColor;
+  }
+
+  captures.forEach(src => {
+    const img = document.createElement("img");
+    img.src = src;
+    stripFrame.appendChild(img);
+  });
+
+  const churchLabel = document.createElement("div");
+  churchLabel.className = "photostrip-label";
+  churchLabel.textContent = CHURCH_NAME;
+  churchLabel.style.color = selectedLabelColor;
+  stripFrame.appendChild(churchLabel);
+
+  photostripContainer.appendChild(stripFrame);
+}
+
+/* ----------------- FRAME COLOR SELECTOR ----------------- */
+document.querySelectorAll("#frameColors .color-choice").forEach(el => {
+  el.addEventListener("click", () => {
+    document.querySelectorAll("#frameColors .color-choice")
+      .forEach(c => c.classList.remove("selected"));
+    el.classList.add("selected");
+    selectedFrameColor = el.dataset.color;
+    renderPhotostrip();
+  });
+});
+
+/* ----------------- LABEL COLOR SELECTOR ----------------- */
+document.querySelectorAll("#labelColors .color-choice").forEach(el => {
+  el.addEventListener("click", () => {
+    document.querySelectorAll("#labelColors .color-choice")
+      .forEach(c => c.classList.remove("selected"));
+    el.classList.add("selected");
+    selectedLabelColor = el.dataset.label;
+    renderPhotostrip();
+  });
+});
+
+/* ----------------- DOWNLOAD PHOTOSTRIP ----------------- */
+btnDownload.addEventListener("click", async ()=> {
+  if(captures.length===0) return alert("No photos to download.");
+
+  const width = 300;
+  const frame = 12;
+  const photoHeight = 400;
+  const labelHeight = 20;
+  const height = captures.length*photoHeight + labelHeight + frame*2;
+
+  const canvas = document.getElementById("previewCanvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = selectedFrameColor;
+  ctx.fillRect(0,0,width,height);
+
+  let y = frame;
+  for(let i=0;i<captures.length;i++){
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise(resolve=>{
+      img.onload = ()=>{
+        ctx.drawImage(img, frame, y, width-frame*2, photoHeight);
+        y += photoHeight;
+        resolve();
+      };
+      img.src = captures[i];
+    });
+  }
+
+  ctx.fillStyle = selectedLabelColor; 
+  ctx.font = "bold 16px Playfair Display";
+  ctx.textAlign = "center";
+  ctx.fillText(CHURCH_NAME, width/2, height - frame - 6);
+
+  const link = document.createElement("a");
+  link.href = canvas.toDataURL("image/png");
+  link.download="custom_photostrip.png";
+  link.click();
+});
+
+renderPhotostrip();
+
+/* ----------------- FRAME COLORS & PATTERNS ----------------- */
+const frameColors = [
+  "#FFF8E7", "#F5E6C8", "#EAD9C5", "#F3E3D3", "#E97451", "#B22222",
+  "#FFC1CC", "#FFDAB9", "#C1F0F6", "#E6E6FA", "#B0E0E6",
+  "#FF6B6B", "#FFA500", "#FFF44F", "#008080", "#00BFFF", "#DA70D6",
+  "#191970", "#4B0082", "#228B22", "#800020", "#333333",
+  "#FFFFF0", "#D3D3D3", "#483C32", "#808000",
+  "#FFD700", "#C0C0C0", "#B87333"
+];
+
+const framePatterns = [
+  { name: "lightBlue", src: "patterns/pattern1.jpg" },
+  { name: "lavender", src: "patterns/pattern2.jpg" },
+  { name: "pinkGingham", src: "patterns/pattern3.jpg" },
+  { name: "greenStripes", src: "patterns/pattern4.jpg" },
+  { name: "wavyPinkGingham", src: "patterns/pattern5.jpg" },
+  { name: "pinkCheckered", src: "patterns/pattern6.jpg" },
+  { name: "blueCheckered", src: "patterns/pattern7.jpg" },
+  { name: "newspaperCollage", src: "patterns/pattern8.jpg" },
+];
+
+const frameColorContainer = document.getElementById("frameColorOptions");
+
+// Color boxes
+frameColors.forEach(color => {
+  const box = document.createElement("div");
+  box.classList.add("colorChoice");
+  box.style.backgroundColor = color;
+  box.style.width = "40px";
+  box.style.height = "40px";
+  box.style.margin = "5px";
+  box.style.cursor = "pointer";
+
+  box.addEventListener("click", () => {
+    selectedFrameColor = color;
+    selectedFramePattern = null;
+    document.querySelectorAll("#frameColorOptions .colorChoice").forEach(c => c.classList.remove("selected"));
+    box.classList.add("selected");
+    renderPhotostrip();
+  });
+
+  frameColorContainer.appendChild(box);
+});
+
+// Pattern boxes
+framePatterns.forEach(pattern => {
+  const box = document.createElement("div");
+  box.classList.add("colorChoice");
+  box.style.backgroundImage = `url(${pattern.src})`;
+  box.style.backgroundSize = "cover";
+  box.style.width = "50px";
+  box.style.height = "50px";
+  box.style.margin = "5px";
+  box.style.border = "2px solid #fff";
+  box.style.borderRadius = "10px";
+  box.style.cursor = "pointer";
+
+  box.addEventListener("click", () => {
+    selectedFramePattern = pattern.src;
+    selectedFrameColor = null;
+    document.querySelectorAll("#frameColorOptions .colorChoice").forEach(c => c.classList.remove("selected"));
+    box.classList.add("selected");
+    renderPhotostrip();
+  });
+
+  frameColorContainer.appendChild(box);
+});
+</script>
+
+</body>
+</html>
